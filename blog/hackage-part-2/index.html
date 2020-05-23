@@ -1,0 +1,21 @@
+<!DOCTYPE HTML><html><head><meta charset="utf-8"><title>Hackage update, part 2 « lambda fairy</title><link href="/styles/styles.css" rel="stylesheet"><link href="/styles/hk-pyg.css" rel="stylesheet"><link href="//fonts.googleapis.com/css?family=Cabin:400,700,400italic,700italic" rel="stylesheet"><meta content="#5c3566" name="theme-color"><meta content="width=device-width" name="viewport"><link href="/atom.xml" type="application/atom+xml" rel="alternate"></head><body><header><h1><a href="/">lambda fairy</a></h1></header><div id="midriff"><nav><ul><li><a href="/">Home</a></li><li><a href="/cv">CV</a></li><li class="current"><a href="/blog">Blog</a></li><li><a href="https://github.com/lambda-fairy">GitHub</a></li></ul></nav><section><h1>Hackage update, part 2</h1><p>Hello, everyone!</p>
+<p>There’s still a few weeks before the Summer begins, so I’m taking the time to prepare. Among other things, this involves setting up a development server, to test the code I write.</p>
+<p>Building and running the Hackage server went mostly without a hitch. Here are the issues I encountered:</p>
+<ul>
+<li><p>The first time I ran the server, it displayed this error:</p>
+<pre><code>  hackage-server: It looks like you are running the server without installing
+  it. That is fine but you will have to give the location of the static html
+  files with the --static-dir flag.</code></pre>
+<p>Passing in <code>--static-dir=datafiles</code> seemed to stop the whining.</p></li>
+<li><p>By default, the <code>admin</code> account could not upload packages. Fortunately, this issue was easy to fix: simply add the account to the “uploaders” group.</p></li>
+<li><p>When I uploaded a package, the documentation did not appear. This is because building packages is handled by a separate program, <code>hackage-build</code>. Running it solved the problem:</p>
+<pre><code>  dist/build/hackage-build/hackage-build init http://localhost:8080
+  dist/build/hackage-build/hackage-build build</code></pre>
+<p>Alternatively, one could upload documentation manually, which is what I tried first.</p></li>
+</ul>
+<p>Here’s what it looks like:</p>
+<p><a href="/images/2014/hello.png"><img src="/images/2014/hello.png" alt="Screenshot of Hackage instance, displaying the package “hello”" /></a></p>
+<p>Beautiful, isn’t it?</p><p><small>(Posted on <a href="/blog/hackage-part-2/" title="link to this post"><time>May 13, 2014</time></a>.)</small></p></section></div><footer><p>Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.</p></footer>
+<script src="//static.getclicky.com/js"></script><script>try{ clicky.init(100874553); }catch(e){}</script>
+<noscript><p><img alt="" width="1" height="1" src="//in.getclicky.com/100874553ns.gif"></p></noscript>
+</body></html>

@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Posts tagged ‘rust’</title>
+    <link href="https://lambda.xyz/tags/rust.xml" rel="self" />
+    <link href="https://lambda.xyz" />
+    <id>https://lambda.xyz/tags/rust.xml</id>
+    <author>
+        <name>lambda fairy</name>
+        <email>lambda.fairy@gmail.com</email>
+    </author>
+    <updated>2017-04-01T00:00:00Z</updated>
+    <entry>
+    <title>Rust's fatal flaw</title>
+    <link href="https://lambda.xyz/blog/rusts-fatal-flaw/" />
+    <id>https://lambda.xyz/blog/rusts-fatal-flaw/</id>
+    <published>2017-04-01T00:00:00Z</published>
+    <updated>2017-04-01T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>I like <a href="https://www.rust-lang.org">Rust</a>. It’s named after an awesome parasitic fungus, it’s developed by a non-profit (Mozilla), and its logo gives it a nice steampunk aesthetic. It’s also great fodder for deep, thoughtful think pieces. Like this one.</p>
+<p>Despite these advantages, Rust does have a fatal flaw. Now, having fatal flaws isn’t a deal breaker in itself. After all, Haskell still has no way to declare two structs with the same field name, and yet it regularly hits the front page of Hacker News.</p>
+<p>But this time, it’s different. This flaw touches on a feature much more fundamental than struct declarations. If left unfixed, it threatens to lock out all but the most dedicated users from the language.</p>
+<p>The flaw involves Rust’s distinction between <em>owned</em> and <em>borrowed</em> types. Owned values wrap a resource; this resource is deällocated automatically when the value falls out of scope. Compare this to a borrowed value, which may point to a resource but does not take responsibility for deällocating it.</p>
+<p>Borrowed values often have fewer capabilities than their owned counterparts, but are in turn easier to pass around. For example, both an owned <code>String</code> and a borrowed <code>&amp;str</code> point to UTF-8–encoded text, but only <code>String</code> lets you mutate and grow the underlying buffer. On the other hand, since <code>&amp;str</code> handles do not manage the buffer themselves, they can be copied cheaply without risking a <a href="https://www.owasp.org/index.php/Double_Free">double free</a>.</p>
+<p>This structure is intuitive and obvious, and a clear improvement over that of other systems languages like C++ or JavaScript. The flaw, then, is not in the basic idea, nor the execution, but in the names of the types themselves.</p>
+<p>As mentioned above, we have the owned <code>String</code> and the borrowed <code>&amp;str</code>. But with arrays, the developers have opted for the confusing <code>Vec&lt;T&gt;</code> and <code>&amp;[T]</code> instead. Going through the names for common owned and borrowed types, we realize that they do not follow a consistent pattern:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Borrowed</th>
+<th style="text-align: left;">Owned</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>str</code></td>
+<td style="text-align: left;"><code>String</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>Path</code></td>
+<td style="text-align: left;"><code>PathBuf</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>OsStr</code></td>
+<td style="text-align: left;"><code>OsString</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>[T]</code></td>
+<td style="text-align: left;"><code>Vec&lt;T&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Uppercase vs lowercase, two different suffixes, and a different set of symbols altogether. How can a newcomer be expected to learn this naming scheme? If the Rust developers really <a href="https://blog.rust-lang.org/2017/03/02/lang-ergonomics.html">care about ergonomics</a>, then this is a good place to start.</p>
+<p>Luckily, the author has a solution. Suppose that the names of these types were changed to the following:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Borrowed</th>
+<th style="text-align: left;">Owned</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>Str</code></td>
+<td style="text-align: left;"><code>String</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>Path</code></td>
+<td style="text-align: left;"><code>Pathing</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>OsStr</code></td>
+<td style="text-align: left;"><code>OsString</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>Slic&lt;T&gt;</code></td>
+<td style="text-align: left;"><code>Slicing&lt;T&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>This scheme is easy to learn: just add <code>-ing</code> for the owned type. (We shall refer to this as <em>Dutch notation</em>, for reasons elaborated on later.) As an added benefit, the <code>Slic</code> name alludes to the efficiency of Rust’s zero-cost abstractions. Very <em>slic</em>.</p>
+<p>That raises the question, though: why the choice of an <code>-ing</code> suffix to represent ownership? The answer should be familiar to anyone with a passing interest in finance. The International Netherlands Group, or <a href="https://en.wikipedia.org/wiki/ING_Group">ING</a> for short, is a multinational banking and financial services corporation headquartered in Amsterdam. Since a bank is in the business of tracking ownership, it feels appropriate to use the name of one in the context of Rust.</p>
+<p>Funnily enough, this idea provides us with an explanation for the original naming scheme. String is produced by the textile industry, which is largely in private hands. It would make sense for ING to invest in its production. Most (foot)paths, however, are maintained by the state; they are shielded—or <em>buffered</em>—from market forces. And vectors are a concept from mathematics, a field known for its use of arcane symbols.</p>
+<p>If neither Dutch notation nor desperate post-hoc rationalizing appeal to you, then there is one final alternative. Perhaps, when the workers of the world rise up and seize the means of production, we can abolish the idea of ownership altogether. I think that would be a great time to release Rust 2.0.</p>]]></summary>
+</entry>
+<entry>
+    <title>Interruptible sleep in Rust</title>
+    <link href="https://lambda.xyz/blog/interruptible-sleep/" />
+    <id>https://lambda.xyz/blog/interruptible-sleep/</id>
+    <published>2017-03-12T00:00:00Z</published>
+    <updated>2017-03-12T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>In my projects, I’ve often wanted to put a thread to sleep for some fixed duration, such that it can be woken up early by another thread.</p>
+<p>My first instinct was to raise a Unix signal and catch the resulting <code>EINTR</code> in the receiving thread. But the <code>sleep()</code> function in Rust loops on <code>EINTR</code> by default; and even if it didn’t, this solution still wouldn’t be portable.</p>
+<p>The solution I settled on uses <a href="https://doc.rust-lang.org/std/thread/fn.park_timeout.html"><code>std::thread::park_timeout()</code></a>. This function blocks until another thread unblocks it, or some amount of time has passed, whichever comes first. This behavior is perfect for my use case.</p>
+<p>Here’s an example that uses <code>park_timeout()</code> to implement a polling loop. Along with an atomic “keep going” flag, this allows for stopping a worker thread in a controlled way.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::sync::</span>Arc<span class="op">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::sync::atomic::</span><span class="op">{</span>AtomicBool<span class="op">,</span> Ordering<span class="op">};</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::</span>thread<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::time::</span>Duration<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="kw">fn</span> main() <span class="op">{</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>    <span class="kw">let</span> keep_going <span class="op">=</span> <span class="pp">Arc::</span>new(<span class="pp">AtomicBool::</span>new(<span class="cn">true</span>))<span class="op">;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    <span class="kw">let</span> worker <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>        <span class="kw">let</span> keep_going <span class="op">=</span> keep_going<span class="op">.</span>clone()<span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>        <span class="pp">thread::</span>spawn(<span class="kw">move</span> <span class="op">||</span> <span class="kw">loop</span> <span class="op">{</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>            <span class="kw">if</span> <span class="op">!</span>keep_going<span class="op">.</span>load(<span class="pp">Ordering::</span>SeqCst) <span class="op">{</span> <span class="kw">break</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>            <span class="pp">thread::</span>park_timeout(<span class="pp">Duration::</span>from_secs(<span class="dv">5</span>))<span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>            <span class="kw">if</span> <span class="op">!</span>keep_going<span class="op">.</span>load(<span class="pp">Ordering::</span>SeqCst) <span class="op">{</span> <span class="kw">break</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>            <span class="pp">println!</span>(<span class="st">&quot;expensive processing begin!!&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>            <span class="co">// An expensive operation that can&#39;t be cancelled</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>            <span class="pp">thread::</span>sleep(<span class="pp">Duration::</span>from_secs(<span class="dv">2</span>))<span class="op">;</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>            <span class="pp">println!</span>(<span class="st">&quot;expensive processing finish!!!&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>        <span class="op">}</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>    <span class="op">};</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>    <span class="pp">println!</span>(<span class="st">&quot;press &lt;enter&gt; to stop&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> dummy <span class="op">=</span> <span class="dt">String</span><span class="pp">::</span>new()<span class="op">;</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a>    <span class="pp">std::io::</span>stdin()<span class="op">.</span>read_line(<span class="op">&amp;</span><span class="kw">mut</span> dummy)<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>    keep_going<span class="op">.</span>store(<span class="cn">false</span><span class="op">,</span> <span class="pp">Ordering::</span>SeqCst)<span class="op">;</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>    worker<span class="op">.</span>thread()<span class="op">.</span>unpark()<span class="op">;</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>    <span class="pp">println!</span>(<span class="st">&quot;waiting for worker to finish&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a>    worker<span class="op">.</span>join()<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>    <span class="pp">println!</span>(<span class="st">&quot;bye!!! ^_^&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>]]></summary>
+</entry>
+<entry>
+    <title>Announcing if_chain</title>
+    <link href="https://lambda.xyz/blog/if-chain/" />
+    <id>https://lambda.xyz/blog/if-chain/</id>
+    <published>2016-12-29T00:00:00Z</published>
+    <updated>2016-12-29T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>Today I published <a href="https://github.com/lambda-fairy/if_chain"><code>if_chain</code></a>, a macro for writing nested <code>if let</code> expressions. The <a href="https://docs.rs/if_chain">documentation</a> does a good job of showing how to use the crate, and I recommend taking a look through it. This article will instead go more into the background behind this macro and how it helped with my own projects.</p>
+<h1 id="the-problem">The problem</h1>
+<p>As part of <a href="https://github.com/lambda-fairy/maud/issues/66">another project</a>, I was working on a <a href="https://doc.rust-lang.org/book/compiler-plugins.html#lint-plugins">lint plugin</a> that catches common mistakes and suggests ways to fix them. Unfortunately, the code I wrote would often look like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">if</span> <span class="kw">let</span> ExprCall(<span class="kw">ref</span> path_expr<span class="op">,</span> <span class="kw">ref</span> args) <span class="op">=</span> expr<span class="op">.</span>node <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>    <span class="kw">if</span> <span class="kw">let</span> <span class="cn">Some</span>(first_arg) <span class="op">=</span> args<span class="op">.</span>first() <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>        <span class="kw">if</span> <span class="kw">let</span> ExprLit(<span class="kw">ref</span> lit) <span class="op">=</span> first_arg<span class="op">.</span>node <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a>            <span class="kw">if</span> <span class="kw">let</span> <span class="pp">LitKind::</span><span class="bu">Str</span>(s<span class="op">,</span> _) <span class="op">=</span> lit<span class="op">.</span>node <span class="op">{</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>                <span class="kw">if</span> s<span class="op">.</span>as_str()<span class="op">.</span>eq_ignore_ascii_case(<span class="st">&quot;&lt;!doctype html&gt;&quot;</span>) <span class="op">{</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a>                    <span class="co">// ...</span></span></code></pre></div>
+<p>As you can see, a common issue was <em>rightward drift</em>. Every <code>if</code> statement would indent the code by one more step, such that the actual message ended up off the page!</p>
+<p>Now, Rust does provide tools for tackling this issue; and in most cases it would be enough to use them. But for my use case—writing lints—they are not enough:</p>
+<ul>
+<li><p>We can rewrite each check to yield an <code>Option</code>, and use <code>.and_then()</code> or the <code>?</code> operator to chain them. But when writing a lint, the interfaces involved are so broad and irregular that wrapping everything is not practical.</p></li>
+<li><p>We can try to merge all these checks into a single pattern. But in this case, the intermediate nodes are wrapped in smart pointers (the <a href="https://manishearth.github.io/rust-internals-docs/syntax/ptr/struct.P.html"><code>P</code></a> type), and current Rust doesn’t have a way to dereference a smart pointer from within a pattern.</p></li>
+</ul>
+<h1 id="existing-solutions">Existing solutions</h1>
+<p>I wasn’t the first to run into this problem. <a href="https://github.com/Manishearth/rust-clippy">rust-clippy</a>, a collection of general-purpose lints, has a utility macro called <a href="https://github.com/Manishearth/rust-clippy/blob/5d78485a81c06a621f607f3e772add628c892b13/clippy_lints/src/utils/mod.rs#L36-L91"><code>if_let_chain!</code></a> for this purpose. Using this macro, the example above would be written like this instead:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="pp">if_let_chain!</span> <span class="op">{</span>[</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>    <span class="kw">let</span> ExprCall(<span class="kw">ref</span> path_expr<span class="op">,</span> <span class="kw">ref</span> args) <span class="op">=</span> expr<span class="op">.</span>node<span class="op">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="kw">let</span> <span class="cn">Some</span>(first_arg) <span class="op">=</span> args<span class="op">.</span>first()<span class="op">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    <span class="kw">let</span> ExprLit(<span class="kw">ref</span> lit) <span class="op">=</span> first_arg<span class="op">.</span>node<span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    <span class="kw">let</span> <span class="pp">LitKind::</span><span class="bu">Str</span>(s<span class="op">,</span> _) <span class="op">=</span> lit<span class="op">.</span>node<span class="op">,</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>    s<span class="op">.</span>as_str()<span class="op">.</span>eq_ignore_ascii_case(<span class="st">&quot;&lt;!doctype html&gt;&quot;</span>)<span class="op">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>    <span class="co">// ...</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>]<span class="op">,</span> <span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>    <span class="co">// ...</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="op">}}</span></span></code></pre></div>
+<p>This solved the rightward drift problem at hand. But as I used the macro, I found a few flaws in the implementation:</p>
+<ul>
+<li><p>Since <code>if_let_chain!</code> is a part of Clippy, I would have to either copy-and-paste the macro, or depend on the whole of Clippy. It would be better if the macro was in its own crate.</p></li>
+<li><p>When inspecting the type of an expression, for example, the code involved can be quite long. One would use intermediate variables (<code>let</code> statements) to keep the code easy to read. But since <code>if_let_chain!</code> expects every line to be an <code>if</code> or <code>if let</code>, there’s no good way of doing this refactoring.</p></li>
+<li><p>Some of the syntax choices, like omitting the <code>if</code> from each check and the use of square brackets, seem arbitrary to me. I’d prefer it if the macro looks more like the generated code.</p></li>
+</ul>
+<h1 id="introducing-if_chain">Introducing <code>if_chain</code></h1>
+<p>Here’s where <code>if_chain</code> comes in. It addresses the points raised above, and adds some features of its own:</p>
+<ul>
+<li><p><em>Fallback values</em>. <code>if_chain!</code> lets you give an <code>else</code> clause, which is evaluated when any of the checks fail to match.</p></li>
+<li><p><em>Multiple patterns</em>. Rust allows for matching multiple patterns at once in a <code>match</code> expression. For example, this code:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">let</span> x <span class="op">=</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="kw">match</span> x <span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    <span class="dv">1</span> <span class="op">|</span> <span class="dv">2</span> <span class="op">=&gt;</span> <span class="pp">println!</span>(<span class="st">&quot;one or two&quot;</span>)<span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    _ <span class="op">=&gt;</span> <span class="pp">println!</span>(<span class="st">&quot;something else&quot;</span>)<span class="op">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<p>prints “one or two.” <code>if_chain!</code> supports this syntax in <code>if let</code> as well.</p></li>
+</ul>
+<p>Our example now <a href="https://github.com/lambda-fairy/maud/blob/c849d9efdfa40565b4b0710036fa0da75b688f46/maud_macros/src/lints/doctype_html.rs#L23-L38">looks like this</a>:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="pp">if_chain!</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a>    <span class="kw">if</span> <span class="kw">let</span> ExprCall(<span class="kw">ref</span> path_expr<span class="op">,</span> <span class="kw">ref</span> args) <span class="op">=</span> expr<span class="op">.</span>node<span class="op">;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a>    <span class="kw">if</span> <span class="kw">let</span> <span class="cn">Some</span>(first_arg) <span class="op">=</span> args<span class="op">.</span>first()<span class="op">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a>    <span class="kw">if</span> <span class="kw">let</span> ExprLit(<span class="kw">ref</span> lit) <span class="op">=</span> first_arg<span class="op">.</span>node<span class="op">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a>    <span class="kw">if</span> <span class="kw">let</span> <span class="pp">LitKind::</span><span class="bu">Str</span>(s<span class="op">,</span> _) <span class="op">=</span> lit<span class="op">.</span>node<span class="op">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a>    <span class="kw">if</span> s<span class="op">.</span>as_str()<span class="op">.</span>eq_ignore_ascii_case(<span class="st">&quot;&lt;!doctype html&gt;&quot;</span>)<span class="op">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a>    <span class="co">// ...</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a>    then <span class="op">{</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a>        <span class="co">// ...</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a>    <span class="op">}</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<p><a href="https://www.youtube.com/watch?v=fp5CkR5qSt0"><img src="/images/2016/delicious.jpg" alt="Yuuko Aioi raises a pair of chopsticks over her head" /></a></p>
+<p>Delicious!</p>]]></summary>
+</entry>
+<entry>
+    <title>The fastest template engine in the West</title>
+    <link href="https://lambda.xyz/blog/maud-is-fast/" />
+    <id>https://lambda.xyz/blog/maud-is-fast/</id>
+    <published>2016-10-14T00:00:00Z</published>
+    <updated>2016-10-14T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>Lately I’ve been working on <a href="https://github.com/lambda-fairy/maud">Maud</a>, an HTML template library for Rust. One of the features that make it special is that it works at <em>compile time</em>. That is, your templates are compiled to plain Rust code, and type-checked and optimized with the rest of your app.</p>
+<p>Among other benefits, this design makes the library <em>fast</em>. Like, really, really fast. To get an idea of how fast it is, take a look at this graph:</p>
+<p><a href="/images/2016/maud-is-fast.svg"><img src="/images/2016/maud-is-fast.svg" alt="Graph of render times for different template engines" /></a></p>
+<p>That’s right. Maud is 69 times faster than Handlebars.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p>I know what you’re thinking:</p>
+<ul>
+<li>“Wow… Lambda-san is so attractive, I feel dizzy just thinking about them.”</li>
+<li>“Why is Maud so much faster than the other engines?”</li>
+<li>“Nice.”</li>
+</ul>
+<p>For the sake of professionalism, I will only answer the second question.</p>
+<p>Maud is fast, because it <strong>does as little work as possible at runtime</strong>. For example, the following template:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="pp">html!</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>    p <span class="op">{</span> <span class="st">&quot;Hi, &quot;</span> (name) <span class="st">&quot;!&quot;</span> <span class="op">}</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<p>expands to this Rust code:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>    <span class="co">// Allocate a `String` to hold the resulting markup</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> __maud_writer <span class="op">=</span> <span class="pp">::std::string::</span><span class="dt">String</span><span class="pp">::</span>with_capacity(<span class="dv">25usize</span>)<span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    __maud_writer<span class="op">.</span>push_str(<span class="st">&quot;&lt;p&gt;Hi, &quot;</span>)<span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    <span class="op">{</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>        <span class="co">// Append the value of `name` to the result, while escaping any</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>        <span class="co">// HTML special characters (e.g. `&lt;` → `&amp;lt;`)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>        <span class="kw">use</span> <span class="pp">::maud::</span>RenderOnce<span class="op">;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>        name<span class="op">.</span>render_once(<span class="op">&amp;</span><span class="kw">mut</span> __maud_writer)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>    <span class="op">};</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>    __maud_writer<span class="op">.</span>push_str(<span class="st">&quot;!&lt;/p&gt;&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>    <span class="co">// Mark the result as valid HTML, so we don&#39;t escape it again</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>    <span class="pp">::maud::</span>PreEscaped(__maud_writer)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<p>In other words, the resulting code does little more than building a string.</p>
+<p>Compare this to other—more dynamic—template engines, which may encode the input data as JSON, or look up the name of the template in a global registry, or do a variety of other things. These engines are effectively language <a href="https://en.wikipedia.org/wiki/Interpreter_(computing)">interpreters</a>, with all the pros and cons of working that way. And as the benchmark above shows, one of these cons is reduced performance.</p>
+<p>That’s not to say that these dynamic approaches aren’t useful. Speed isn’t the only factor in choosing a template engine; and to be fair, when an average request takes hundreds of milliseconds already, a <em>micro</em>second difference doesn’t matter that much. Other engines also let you edit a template without re-compiling the app, and their syntax can feel more familiar to users of other languages.</p>
+<p>What I do want to show, then, is how design decisions that seem minor at first can have a big impact down the road. I’ve added a bunch of optimizations over the years (some of them stolen from <a href="https://github.com/Stebalien/horrorshow-rs">Horrorshow</a>), but none of them have affected performance that much. The largest difference is in static vs dynamic; the rest is details.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>The benchmark code can be found on <a href="https://github.com/lambda-fairy/maud/tree/1bdf6ea06adf4e62cf3b4fe65d1cd086db7ed190/benchmarks">GitHub</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>]]></summary>
+</entry>
+
+</feed>

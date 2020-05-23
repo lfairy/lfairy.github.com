@@ -1,0 +1,43 @@
+<!DOCTYPE HTML><html><head><meta charset="utf-8"><title>The fastest template engine in the West « lambda fairy</title><link href="/styles/styles.css" rel="stylesheet"><link href="/styles/hk-pyg.css" rel="stylesheet"><link href="//fonts.googleapis.com/css?family=Cabin:400,700,400italic,700italic" rel="stylesheet"><meta content="#5c3566" name="theme-color"><meta content="width=device-width" name="viewport"><link href="/atom.xml" type="application/atom+xml" rel="alternate"></head><body><header><h1><a href="/">lambda fairy</a></h1></header><div id="midriff"><nav><ul><li><a href="/">Home</a></li><li><a href="/cv">CV</a></li><li class="current"><a href="/blog">Blog</a></li><li><a href="https://github.com/lambda-fairy">GitHub</a></li></ul></nav><section><h1>The fastest template engine in the West</h1><p>Lately I’ve been working on <a href="https://github.com/lambda-fairy/maud">Maud</a>, an HTML template library for Rust. One of the features that make it special is that it works at <em>compile time</em>. That is, your templates are compiled to plain Rust code, and type-checked and optimized with the rest of your app.</p>
+<p>Among other benefits, this design makes the library <em>fast</em>. Like, really, really fast. To get an idea of how fast it is, take a look at this graph:</p>
+<p><a href="/images/2016/maud-is-fast.svg"><img src="/images/2016/maud-is-fast.svg" alt="Graph of render times for different template engines" /></a></p>
+<p>That’s right. Maud is 69 times faster than Handlebars.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p>I know what you’re thinking:</p>
+<ul>
+<li>“Wow… Lambda-san is so attractive, I feel dizzy just thinking about them.”</li>
+<li>“Why is Maud so much faster than the other engines?”</li>
+<li>“Nice.”</li>
+</ul>
+<p>For the sake of professionalism, I will only answer the second question.</p>
+<p>Maud is fast, because it <strong>does as little work as possible at runtime</strong>. For example, the following template:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="pp">html!</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>    p <span class="op">{</span> <span class="st">&quot;Hi, &quot;</span> (name) <span class="st">&quot;!&quot;</span> <span class="op">}</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<p>expands to this Rust code:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>    <span class="co">// Allocate a `String` to hold the resulting markup</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> __maud_writer <span class="op">=</span> <span class="pp">::std::string::</span><span class="dt">String</span><span class="pp">::</span>with_capacity(<span class="dv">25usize</span>)<span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>    __maud_writer<span class="op">.</span>push_str(<span class="st">&quot;&lt;p&gt;Hi, &quot;</span>)<span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>    <span class="op">{</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>        <span class="co">// Append the value of `name` to the result, while escaping any</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>        <span class="co">// HTML special characters (e.g. `&lt;` → `&amp;lt;`)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a>        <span class="kw">use</span> <span class="pp">::maud::</span>RenderOnce<span class="op">;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a>        name<span class="op">.</span>render_once(<span class="op">&amp;</span><span class="kw">mut</span> __maud_writer)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a>    <span class="op">};</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a>    __maud_writer<span class="op">.</span>push_str(<span class="st">&quot;!&lt;/p&gt;&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a>    <span class="co">// Mark the result as valid HTML, so we don't escape it again</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a>    <span class="pp">::maud::</span>PreEscaped(__maud_writer)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<p>In other words, the resulting code does little more than building a string.</p>
+<p>Compare this to other—more dynamic—template engines, which may encode the input data as JSON, or look up the name of the template in a global registry, or do a variety of other things. These engines are effectively language <a href="https://en.wikipedia.org/wiki/Interpreter_(computing)">interpreters</a>, with all the pros and cons of working that way. And as the benchmark above shows, one of these cons is reduced performance.</p>
+<p>That’s not to say that these dynamic approaches aren’t useful. Speed isn’t the only factor in choosing a template engine; and to be fair, when an average request takes hundreds of milliseconds already, a <em>micro</em>second difference doesn’t matter that much. Other engines also let you edit a template without re-compiling the app, and their syntax can feel more familiar to users of other languages.</p>
+<p>What I do want to show, then, is how design decisions that seem minor at first can have a big impact down the road. I’ve added a bunch of optimizations over the years (some of them stolen from <a href="https://github.com/Stebalien/horrorshow-rs">Horrorshow</a>), but none of them have affected performance that much. The largest difference is in static vs dynamic; the rest is details.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p>The benchmark code can be found on <a href="https://github.com/lambda-fairy/maud/tree/1bdf6ea06adf4e62cf3b4fe65d1cd086db7ed190/benchmarks">GitHub</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section><p><small>(Posted on <a href="/blog/maud-is-fast/" title="link to this post"><time>Oct 14, 2016</time></a>.)</small></p></section></div><footer><p>Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.</p></footer>
+<script src="//static.getclicky.com/js"></script><script>try{ clicky.init(100874553); }catch(e){}</script>
+<noscript><p><img alt="" width="1" height="1" src="//in.getclicky.com/100874553ns.gif"></p></noscript>
+</body></html>

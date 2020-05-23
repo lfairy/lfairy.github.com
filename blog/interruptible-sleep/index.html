@@ -1,0 +1,39 @@
+<!DOCTYPE HTML><html><head><meta charset="utf-8"><title>Interruptible sleep in Rust « lambda fairy</title><link href="/styles/styles.css" rel="stylesheet"><link href="/styles/hk-pyg.css" rel="stylesheet"><link href="//fonts.googleapis.com/css?family=Cabin:400,700,400italic,700italic" rel="stylesheet"><meta content="#5c3566" name="theme-color"><meta content="width=device-width" name="viewport"><link href="/atom.xml" type="application/atom+xml" rel="alternate"></head><body><header><h1><a href="/">lambda fairy</a></h1></header><div id="midriff"><nav><ul><li><a href="/">Home</a></li><li><a href="/cv">CV</a></li><li class="current"><a href="/blog">Blog</a></li><li><a href="https://github.com/lambda-fairy">GitHub</a></li></ul></nav><section><h1>Interruptible sleep in Rust</h1><p>In my projects, I’ve often wanted to put a thread to sleep for some fixed duration, such that it can be woken up early by another thread.</p>
+<p>My first instinct was to raise a Unix signal and catch the resulting <code>EINTR</code> in the receiving thread. But the <code>sleep()</code> function in Rust loops on <code>EINTR</code> by default; and even if it didn’t, this solution still wouldn’t be portable.</p>
+<p>The solution I settled on uses <a href="https://doc.rust-lang.org/std/thread/fn.park_timeout.html"><code>std::thread::park_timeout()</code></a>. This function blocks until another thread unblocks it, or some amount of time has passed, whichever comes first. This behavior is perfect for my use case.</p>
+<p>Here’s an example that uses <code>park_timeout()</code> to implement a polling loop. Along with an atomic “keep going” flag, this allows for stopping a worker thread in a controlled way.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::sync::</span>Arc<span class="op">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::sync::atomic::</span><span class="op">{</span>AtomicBool<span class="op">,</span> Ordering<span class="op">};</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::</span>thread<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">std::time::</span>Duration<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="kw">fn</span> main() <span class="op">{</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a>    <span class="kw">let</span> keep_going <span class="op">=</span> <span class="pp">Arc::</span>new(<span class="pp">AtomicBool::</span>new(<span class="cn">true</span>))<span class="op">;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>    <span class="kw">let</span> worker <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a>        <span class="kw">let</span> keep_going <span class="op">=</span> keep_going<span class="op">.</span>clone()<span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a>        <span class="pp">thread::</span>spawn(<span class="kw">move</span> <span class="op">||</span> <span class="kw">loop</span> <span class="op">{</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>            <span class="kw">if</span> <span class="op">!</span>keep_going<span class="op">.</span>load(<span class="pp">Ordering::</span>SeqCst) <span class="op">{</span> <span class="kw">break</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a>            <span class="pp">thread::</span>park_timeout(<span class="pp">Duration::</span>from_secs(<span class="dv">5</span>))<span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a>            <span class="kw">if</span> <span class="op">!</span>keep_going<span class="op">.</span>load(<span class="pp">Ordering::</span>SeqCst) <span class="op">{</span> <span class="kw">break</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>            <span class="pp">println!</span>(<span class="st">&quot;expensive processing begin!!&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true"></a>            <span class="co">// An expensive operation that can't be cancelled</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true"></a>            <span class="pp">thread::</span>sleep(<span class="pp">Duration::</span>from_secs(<span class="dv">2</span>))<span class="op">;</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true"></a>            <span class="pp">println!</span>(<span class="st">&quot;expensive processing finish!!!&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true"></a>        <span class="op">}</span>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true"></a>    <span class="op">};</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true"></a>    <span class="pp">println!</span>(<span class="st">&quot;press &lt;enter&gt; to stop&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> dummy <span class="op">=</span> <span class="dt">String</span><span class="pp">::</span>new()<span class="op">;</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true"></a>    <span class="pp">std::io::</span>stdin()<span class="op">.</span>read_line(<span class="op">&amp;</span><span class="kw">mut</span> dummy)<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true"></a>    keep_going<span class="op">.</span>store(<span class="cn">false</span><span class="op">,</span> <span class="pp">Ordering::</span>SeqCst)<span class="op">;</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true"></a>    worker<span class="op">.</span>thread()<span class="op">.</span>unpark()<span class="op">;</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true"></a>    <span class="pp">println!</span>(<span class="st">&quot;waiting for worker to finish&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true"></a>    worker<span class="op">.</span>join()<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true"></a></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true"></a>    <span class="pp">println!</span>(<span class="st">&quot;bye!!! ^_^&quot;</span>)<span class="op">;</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div><p><small>(Posted on <a href="/blog/interruptible-sleep/" title="link to this post"><time>Mar 12, 2017</time></a>.)</small></p></section></div><footer><p>Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.</p></footer>
+<script src="//static.getclicky.com/js"></script><script>try{ clicky.init(100874553); }catch(e){}</script>
+<noscript><p><img alt="" width="1" height="1" src="//in.getclicky.com/100874553ns.gif"></p></noscript>
+</body></html>

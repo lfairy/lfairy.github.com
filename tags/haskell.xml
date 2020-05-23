@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Posts tagged ‘haskell’</title>
+    <link href="https://lambda.xyz/tags/haskell.xml" rel="self" />
+    <link href="https://lambda.xyz" />
+    <id>https://lambda.xyz/tags/haskell.xml</id>
+    <author>
+        <name>lambda fairy</name>
+        <email>lambda.fairy@gmail.com</email>
+    </author>
+    <updated>2017-03-13T00:00:00Z</updated>
+    <entry>
+    <title>Splitting a list into chunks with unfoldr</title>
+    <link href="https://lambda.xyz/blog/chunky-bacon/" />
+    <id>https://lambda.xyz/blog/chunky-bacon/</id>
+    <published>2017-03-13T00:00:00Z</published>
+    <updated>2017-03-13T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>I’m quite fond of the <a href="https://hackage.haskell.org/package/base-4.9.1.0/docs/Data-List.html#v:unfoldr"><code>unfoldr</code></a> function in Haskell. It doesn’t seem well known, which is a shame because I’ve often found it useful.</p>
+<p>One of these uses is in splitting a list into chunks of a specified length. Here are some examples of what I’m going for:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="op">&gt;&gt;&gt;</span> chunks <span class="dv">1</span> [<span class="ch">&#39;a&#39;</span><span class="op">..</span><span class="ch">&#39;l&#39;</span>]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a>[<span class="st">&quot;a&quot;</span>,<span class="st">&quot;b&quot;</span>,<span class="st">&quot;c&quot;</span>,<span class="st">&quot;d&quot;</span>,<span class="st">&quot;e&quot;</span>,<span class="st">&quot;f&quot;</span>,<span class="st">&quot;g&quot;</span>,<span class="st">&quot;h&quot;</span>,<span class="st">&quot;i&quot;</span>,<span class="st">&quot;j&quot;</span>,<span class="st">&quot;k&quot;</span>,<span class="st">&quot;l&quot;</span>]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="op">&gt;&gt;&gt;</span> chunks <span class="dv">2</span> [<span class="ch">&#39;a&#39;</span><span class="op">..</span><span class="ch">&#39;l&#39;</span>]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a>[<span class="st">&quot;ab&quot;</span>,<span class="st">&quot;cd&quot;</span>,<span class="st">&quot;ef&quot;</span>,<span class="st">&quot;gh&quot;</span>,<span class="st">&quot;ij&quot;</span>,<span class="st">&quot;kl&quot;</span>]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true"></a><span class="op">&gt;&gt;&gt;</span> chunks <span class="dv">3</span> [<span class="ch">&#39;a&#39;</span><span class="op">..</span><span class="ch">&#39;l&#39;</span>]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true"></a>[<span class="st">&quot;abc&quot;</span>,<span class="st">&quot;def&quot;</span>,<span class="st">&quot;ghi&quot;</span>,<span class="st">&quot;jkl&quot;</span>]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true"></a><span class="op">&gt;&gt;&gt;</span> chunks <span class="dv">4</span> [<span class="ch">&#39;a&#39;</span><span class="op">..</span><span class="ch">&#39;l&#39;</span>]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true"></a>[<span class="st">&quot;abcd&quot;</span>,<span class="st">&quot;efgh&quot;</span>,<span class="st">&quot;ijkl&quot;</span>]</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true"></a><span class="op">&gt;&gt;&gt;</span> chunks <span class="dv">5</span> [<span class="ch">&#39;a&#39;</span><span class="op">..</span><span class="ch">&#39;l&#39;</span>]</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true"></a>[<span class="st">&quot;abcde&quot;</span>,<span class="st">&quot;fghij&quot;</span>,<span class="st">&quot;kl&quot;</span>]</span></code></pre></div>
+<p>And here’s the definition:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ot">chunks ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [[a]]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>chunks <span class="ot">=</span> unfoldr <span class="op">$</span> \xs <span class="ot">-&gt;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="kw">case</span> xs <span class="kw">of</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>        <span class="co">-- If there are no elements left, stop iteration</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a>        [] <span class="ot">-&gt;</span> <span class="dt">Nothing</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>        <span class="co">-- Otherwise, split off n elements and yield them</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a>        _ <span class="ot">-&gt;</span> <span class="dt">Just</span> <span class="op">$</span> <span class="fu">splitAt</span> n xs</span></code></pre></div>]]></summary>
+</entry>
+<entry>
+    <title>Hackage update, part 4</title>
+    <link href="https://lambda.xyz/blog/hackage-part-4/" />
+    <id>https://lambda.xyz/blog/hackage-part-4/</id>
+    <published>2014-08-30T00:00:00Z</published>
+    <updated>2014-08-30T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>A lot has happened with Hackage since my <a href="/blog/hackage-part-3/">last update</a>. Now that the Summer of Code is over, I’ll summarize the work I’ve done since then, and outline where this project will go next.</p>
+<h1 id="whats-build-reporting">What’s “build reporting”?</h1>
+<p>Since my project covered a few obscure parts of Hackage and Cabal, I think it’s worthwhile to clear some terminology first.</p>
+<p>If you’ve uploaded a library to <a href="https://hackage.haskell.org/">Hackage</a> before, you may have noticed that the Haddock documentation does not appear straight away. Since building a package can be quite resource intensive, the job is handled by a dedicated <em>build bot</em>. This bot continually polls for new packages, invokes <code>cabal install</code> on them (with some special flags, which I’ll go into later), and uploads the result.</p>
+<p>Of course, this process does not always succeed. If a package fails to compile, then it will not have any documentation either. This is clearly very inconvenient.</p>
+<p>Fortunately, recent versions of <code>cabal</code> include a feature called <em>build reporting</em>. When invoked with the <code>--build-summary</code> option, <code>cabal</code> creates a file containing useful information about the build. Here’s an example using the <code>robot</code> package:</p>
+<pre><code>$ cabal install robot --build-summary=&#39;$pkg.report&#39;
+...
+$ cat robot.report
+package: robot-1.3.0.1
+os: linux
+arch: x86_64
+compiler: ghc-7.6.3
+client: cabal-install-1.20.0.3
+dependencies: xhb-0.5.2014.4.10 transformers-0.3.0.0
+              exceptions-0.6.1 containers-0.5.0.0 base-4.6.0.1
+install-outcome: InstallOk
+docs-outcome: NotTried
+tests-outcome: NotTried</code></pre>
+<p>Since the build bot uses <code>cabal</code>, it has access to these reports as well. So whenever the bot completes a build — successful or not — it posts the corresponding report to Hackage. You can read these reports yourself via a special URL; for our <code>robot</code> example it’s <a href="http://hackage.haskell.org/package/robot-1.3.0.1/reports/" class="uri">http://hackage.haskell.org/package/robot-1.3.0.1/reports/</a>.</p>
+<p>In summary: if the docs for a package are missing, then the reports will tell us why. If there are no reports, then it must mean the build bot hasn’t attempted the package yet. All is fine and dandy, at least in theory.</p>
+<h1 id="unfortunately">Unfortunately…</h1>
+<p>… not all builds were reported. The gaps were in two places: <em>planning failures</em> and <em>package candidates</em>. My <a href="https://github.com/haskell/cabal/pull/2025">latest patch</a> to <code>cabal</code> fixed both these issues.</p>
+<h2 id="reporting-planning-failures">Reporting planning failures</h2>
+<p>A <em>planning failure</em> is when cabal-install cannot find a consistent set of dependencies to use. You can trigger a planning failure yourself:</p>
+<pre><code>$ cabal install robot --constraint=&#39;robot &lt; 1.1&#39; --constraint=&#39;robot &gt; 1.1&#39;
+cabal: Could not resolve dependencies:
+...</code></pre>
+<p>Since we can’t have a <code>robot</code> which is both older <em>and</em> newer than 1.1, the resolver fails.</p>
+<p>Formerly, as dependency resolution ran early in the build process, any failures at this stage did not generate a corresponding report. So if the build bot encountered a planning failure, all the user saw was missing documentation, with no hints as to what went wrong.</p>
+<p>The fix was mostly straightforward, save for one issue: since users can report their own builds, a naïve implementation would have lead to Hackage being swamped with frivolous reports. So this feature is guarded behind a flag (<code>--report-planning-failure</code>), and disabled by default.</p>
+<h2 id="reporting-candidate-builds">Reporting candidate builds</h2>
+<p>Hackage has a feature called <em>build candidates</em>. This lets package maintainers upload and test packages without publishing them to the main site.</p>
+<p>Again, the problem was the lack of reporting: when a candidate was uploaded, the build bot would compile the package but not submit a report. This was a major issue, since this reporting was what motivated the feature in the first place.</p>
+<p>After some digging, I traced this to <a href="https://github.com/haskell/cabal/issues/1189">a bug in <code>cabal</code></a>. A candidate is not published in the main package index (by definition), so it is impossible to refer to one by name (e.g. <code>hello-1.0</code>). So the build bot invokes <code>cabal</code> using the bare URL instead (e.g. <code>http://hackage.haskell.org/package/hello/candidates/hello-1.0.tar.gz</code>).</p>
+<p>The problem was if only a URL was given, <code>cabal</code> considered it a “local” package and did not generate a report. The reason for this behavior is outside the scope of this post, but the fix was clear: change <code>cabal</code> to generate reports for all packages, no matter how they are specified on the command line.</p>
+<h1 id="where-to-next">Where to next?</h1>
+<p>Though the Summer of Code has ended, my work with Hackage has not. There are still many issues that need clearing up, especially with the <a href="https://github.com/haskell/hackage-server/labels/component:%20candidates">candidates feature</a>; I’ll continue hacking away at them in my spare time.</p>
+<p>And lest I forget — many thanks to my mentor Duncan Coutts for his guidance throughout this project! I had plenty of fun this summer, and learned just as much.</p>]]></summary>
+</entry>
+<entry>
+    <title>Hackage update, part 3</title>
+    <link href="https://lambda.xyz/blog/hackage-part-3/" />
+    <id>https://lambda.xyz/blog/hackage-part-3/</id>
+    <published>2014-07-09T00:00:00Z</published>
+    <updated>2014-07-09T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>Over the last few months, I’ve been working on <a href="https://github.com/haskell/hackage-server/wiki/GSoC-2014">various improvements</a> to <a href="https://hackage.haskell.org/">Hackage</a> under the supervision of Duncan Coutts, as part of the <a href="https://www.google-melange.com/gsoc/homepage/google/gsoc2014">Google Summer of Code</a>. As it’s been a while since my last post, I thought I’d give a short summary of what I’ve done so far.</p>
+<h1 id="documentation-upload">Documentation upload</h1>
+<p>Hackage has supported <a href="https://github.com/haskell/hackage-server/issues/56">manual documentation uploads</a> for quite some time, albeit through a rather obscure API. This is an important feature for packages which cannot be built automatically on the server.</p>
+<p>My contribution was a simple HTML interface, which allowed for uploading and deleting documentation at the click of a button. Here’s how it looks (click to enlarge):</p>
+<p><a href="/images/2014/doc-upload.png"><img src="/images/2014/doc-upload.png" /></a></p>
+<p>There is still one pain point, however. Building the documentation archive in the first place is quite error-prone; it would be nice if Cabal could automate the process. As that is a Cabal issue, not a Hackage one, it is out of scope for now – but would make a good project to tackle next.</p>
+<h1 id="build-reports">Build reports</h1>
+<p>The next feature I worked on was build reporting. The Hackage build bot leaves logs for every package it builds, and it is often helpful to view them. Users can submit their own reports as well, though this is rare in practice. Unfortunately, as with documentation uploads, while the functionality was there, it was <a href="http://fuuzetsu.co.uk/blog/posts/2014-01-06-Fix-your-Hackage-documentation.html">difficult to discover and use</a>.</p>
+<p>My contribution had two parts – a fancy build status indicator (click to enlarge):</p>
+<p><a href="/images/2014/br-status.png"><img src="/images/2014/br-status.png" /></a></p>
+<p>and a pretty build reports view:</p>
+<p><a href="/images/2014/br-report.png"><img src="/images/2014/br-report.png" /></a></p>
+<p>This part of the project ended up a bit broader than expected, as there was plenty of information to summarize. The gory details are on the <a href="https://github.com/haskell/hackage-server/wiki/Bikeshed:-build-reports">wiki</a>, for the curious.</p>
+<h1 id="next-steps">Next steps</h1>
+<p>Overall, I’m happy with the work I’ve done so far, especially given that it’s my first time working on a project of this scale.</p>
+<p>Next up would most likely be either <a href="https://github.com/haskell/hackage-server/issues/41">package candidates</a> or the tag system.</p>]]></summary>
+</entry>
+<entry>
+    <title>Hackage update, part 2</title>
+    <link href="https://lambda.xyz/blog/hackage-part-2/" />
+    <id>https://lambda.xyz/blog/hackage-part-2/</id>
+    <published>2014-05-13T00:00:00Z</published>
+    <updated>2014-05-13T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>Hello, everyone!</p>
+<p>There’s still a few weeks before the Summer begins, so I’m taking the time to prepare. Among other things, this involves setting up a development server, to test the code I write.</p>
+<p>Building and running the Hackage server went mostly without a hitch. Here are the issues I encountered:</p>
+<ul>
+<li><p>The first time I ran the server, it displayed this error:</p>
+<pre><code>  hackage-server: It looks like you are running the server without installing
+  it. That is fine but you will have to give the location of the static html
+  files with the --static-dir flag.</code></pre>
+<p>Passing in <code>--static-dir=datafiles</code> seemed to stop the whining.</p></li>
+<li><p>By default, the <code>admin</code> account could not upload packages. Fortunately, this issue was easy to fix: simply add the account to the “uploaders” group.</p></li>
+<li><p>When I uploaded a package, the documentation did not appear. This is because building packages is handled by a separate program, <code>hackage-build</code>. Running it solved the problem:</p>
+<pre><code>  dist/build/hackage-build/hackage-build init http://localhost:8080
+  dist/build/hackage-build/hackage-build build</code></pre>
+<p>Alternatively, one could upload documentation manually, which is what I tried first.</p></li>
+</ul>
+<p>Here’s what it looks like:</p>
+<p><a href="/images/2014/hello.png"><img src="/images/2014/hello.png" alt="Screenshot of Hackage instance, displaying the package “hello”" /></a></p>
+<p>Beautiful, isn’t it?</p>]]></summary>
+</entry>
+<entry>
+    <title>Hello, GSoC!</title>
+    <link href="https://lambda.xyz/blog/hello-gsoc/" />
+    <id>https://lambda.xyz/blog/hello-gsoc/</id>
+    <published>2014-04-26T00:00:00Z</published>
+    <updated>2014-04-26T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>A few days ago, my proposal, <a href="https://docs.google.com/document/d/1bcDiudULtaz3NFCqTHXD2WU6Ighsm199D7ojfS8quVI/edit">“Flesh out features of Hackage 2.0”</a>, was accepted into this year’s <a href="https://www.google-melange.com/gsoc/homepage/google/gsoc2014">Google Summer of Code</a> – hooray!</p>
+<p>In case you’re wondering: <em>Hackage</em> is a repository of software for the <em>Haskell</em> programming language. My project aims to improve parts of the Hackage interface, to make various features easier to use.</p>
+<p>I’ll post updates semi-regularly to <a href="https://lambda.xyz/blog/">this very blog</a>, so stay tuned!</p>
+<p><a href="https://www.youtube.com/watch?v=MU4HMhic6AU"><em>*squee*</em></a></p>]]></summary>
+</entry>
+
+</feed>

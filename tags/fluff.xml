@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Posts tagged ‘fluff’</title>
+    <link href="https://lambda.xyz/tags/fluff.xml" rel="self" />
+    <link href="https://lambda.xyz" />
+    <id>https://lambda.xyz/tags/fluff.xml</id>
+    <author>
+        <name>lambda fairy</name>
+        <email>lambda.fairy@gmail.com</email>
+    </author>
+    <updated>2017-04-01T00:00:00Z</updated>
+    <entry>
+    <title>Rust's fatal flaw</title>
+    <link href="https://lambda.xyz/blog/rusts-fatal-flaw/" />
+    <id>https://lambda.xyz/blog/rusts-fatal-flaw/</id>
+    <published>2017-04-01T00:00:00Z</published>
+    <updated>2017-04-01T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>I like <a href="https://www.rust-lang.org">Rust</a>. It’s named after an awesome parasitic fungus, it’s developed by a non-profit (Mozilla), and its logo gives it a nice steampunk aesthetic. It’s also great fodder for deep, thoughtful think pieces. Like this one.</p>
+<p>Despite these advantages, Rust does have a fatal flaw. Now, having fatal flaws isn’t a deal breaker in itself. After all, Haskell still has no way to declare two structs with the same field name, and yet it regularly hits the front page of Hacker News.</p>
+<p>But this time, it’s different. This flaw touches on a feature much more fundamental than struct declarations. If left unfixed, it threatens to lock out all but the most dedicated users from the language.</p>
+<p>The flaw involves Rust’s distinction between <em>owned</em> and <em>borrowed</em> types. Owned values wrap a resource; this resource is deällocated automatically when the value falls out of scope. Compare this to a borrowed value, which may point to a resource but does not take responsibility for deällocating it.</p>
+<p>Borrowed values often have fewer capabilities than their owned counterparts, but are in turn easier to pass around. For example, both an owned <code>String</code> and a borrowed <code>&amp;str</code> point to UTF-8–encoded text, but only <code>String</code> lets you mutate and grow the underlying buffer. On the other hand, since <code>&amp;str</code> handles do not manage the buffer themselves, they can be copied cheaply without risking a <a href="https://www.owasp.org/index.php/Double_Free">double free</a>.</p>
+<p>This structure is intuitive and obvious, and a clear improvement over that of other systems languages like C++ or JavaScript. The flaw, then, is not in the basic idea, nor the execution, but in the names of the types themselves.</p>
+<p>As mentioned above, we have the owned <code>String</code> and the borrowed <code>&amp;str</code>. But with arrays, the developers have opted for the confusing <code>Vec&lt;T&gt;</code> and <code>&amp;[T]</code> instead. Going through the names for common owned and borrowed types, we realize that they do not follow a consistent pattern:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Borrowed</th>
+<th style="text-align: left;">Owned</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>str</code></td>
+<td style="text-align: left;"><code>String</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>Path</code></td>
+<td style="text-align: left;"><code>PathBuf</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>OsStr</code></td>
+<td style="text-align: left;"><code>OsString</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>[T]</code></td>
+<td style="text-align: left;"><code>Vec&lt;T&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>Uppercase vs lowercase, two different suffixes, and a different set of symbols altogether. How can a newcomer be expected to learn this naming scheme? If the Rust developers really <a href="https://blog.rust-lang.org/2017/03/02/lang-ergonomics.html">care about ergonomics</a>, then this is a good place to start.</p>
+<p>Luckily, the author has a solution. Suppose that the names of these types were changed to the following:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Borrowed</th>
+<th style="text-align: left;">Owned</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>Str</code></td>
+<td style="text-align: left;"><code>String</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>Path</code></td>
+<td style="text-align: left;"><code>Pathing</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>OsStr</code></td>
+<td style="text-align: left;"><code>OsString</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>Slic&lt;T&gt;</code></td>
+<td style="text-align: left;"><code>Slicing&lt;T&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<p>This scheme is easy to learn: just add <code>-ing</code> for the owned type. (We shall refer to this as <em>Dutch notation</em>, for reasons elaborated on later.) As an added benefit, the <code>Slic</code> name alludes to the efficiency of Rust’s zero-cost abstractions. Very <em>slic</em>.</p>
+<p>That raises the question, though: why the choice of an <code>-ing</code> suffix to represent ownership? The answer should be familiar to anyone with a passing interest in finance. The International Netherlands Group, or <a href="https://en.wikipedia.org/wiki/ING_Group">ING</a> for short, is a multinational banking and financial services corporation headquartered in Amsterdam. Since a bank is in the business of tracking ownership, it feels appropriate to use the name of one in the context of Rust.</p>
+<p>Funnily enough, this idea provides us with an explanation for the original naming scheme. String is produced by the textile industry, which is largely in private hands. It would make sense for ING to invest in its production. Most (foot)paths, however, are maintained by the state; they are shielded—or <em>buffered</em>—from market forces. And vectors are a concept from mathematics, a field known for its use of arcane symbols.</p>
+<p>If neither Dutch notation nor desperate post-hoc rationalizing appeal to you, then there is one final alternative. Perhaps, when the workers of the world rise up and seize the means of production, we can abolish the idea of ownership altogether. I think that would be a great time to release Rust 2.0.</p>]]></summary>
+</entry>
+<entry>
+    <title>Poles</title>
+    <link href="https://lambda.xyz/blog/poles/" />
+    <id>https://lambda.xyz/blog/poles/</id>
+    <published>2016-10-28T00:00:00Z</published>
+    <updated>2016-10-28T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>Our planet has many different poles. Here are a few of them:</p>
+<p>The two <strong>geographic poles</strong> are the points where the Earth’s axis of rotation intersects its surface. The terms “North Pole” or “South Pole” refer to these poles.</p>
+<p>While the geographic poles are defined in terms of rotation, the <strong>magnetic</strong> and <strong>geomagnetic</strong> poles are defined by the Earth’s magnetic field. At the magnetic poles, the planet’s magnetic field points straight down. Unlike the geographic poles, the magnetic poles are not <em>antipodal</em>, or directly opposite to each other. The geomagnetic poles, then, are an approximation of the magnetic poles which are antipodal.</p>
+<p>Finally, we have the <strong>ethnic Poles</strong>. These can be found all over the planet, but are for the most part concentrated in Central Europe.</p>
+<p>Discuss.</p>]]></summary>
+</entry>
+<entry>
+    <title>Shooting yourself in the foot</title>
+    <link href="https://lambda.xyz/blog/twelve-inches/" />
+    <id>https://lambda.xyz/blog/twelve-inches/</id>
+    <published>2013-07-24T00:00:00Z</published>
+    <updated>2013-07-24T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>I’ve come up with a few <a href="http://m5p.com/~pravn/foot.html">“shooting yourself in the foot”</a> jokes over the years. I hope you can get a decent chuckle out of these ☺</p>
+<h2 id="go">Go</h2>
+<p>You shoot many feet, all at the same time, very, very, quickly.</p>
+<h2 id="python">Python</h2>
+<p>You take out your gun, aim it at your foot, and pull the trigger. It creates a perfectly round hole in the middle of its target.</p>
+<p>You pat yourself on the back and limp out of the office, proud of a job well done.</p>
+<h2 id="cobol">COBOL</h2>
+<p>You try to shoot yourself in the foot, but the compiler notices you’re already dead inside and optimizes it away.</p>
+<h2 id="eiffel">Eiffel</h2>
+<p>You can’t.</p>
+<h2 id="ocaml">OCaml</h2>
+<p>You create a new foot that is already shot, and treat that as the original. Your old foot eventually disappears.</p>
+<h2 id="haskell">Haskell</h2>
+<p>You try to shoot yourself in the foot, but can’t figure out how. So you post your problem on StackOverflow.</p>
+<p>A few minutes later, you receive five replies: all of them different, none of which you understand, and at least one of which uses a library <a href="https://cokmett.github.io/cokmett/">Edward Kmett</a> wrote last week.</p>
+<h2 id="php">PHP</h2>
+<p>I was just thinking… you know about gun accidents?</p>
+<blockquote>
+<p>Yeah, what about them—</p>
+</blockquote>
+<p>So many people get hurt —killed, even— by guns, every single day. And you know how they get hurt? Because SOMEONE ELSE IS POINTING THE GUN AT THEM.</p>
+<blockquote>
+<p>Obviously—</p>
+</blockquote>
+<p>Don’t interrupt, Rasmus. You’re breaking my flow.</p>
+<blockquote>
+<p>Sorry.</p>
+</blockquote>
+<p>Anyway, I was thinking — why not fix the problem right at the beginning? Why don’t we plug the hole <em>right at its source</em>?</p>
+<blockquote>
+<p>You mean, like improved education, tougher licensing laws—</p>
+</blockquote>
+<p>No, Rasmus, don’t you see? Accidents happen only when people point their gun <em>away</em> from themselves.</p>
+<blockquote>
+<p>You’ve lost me now. Go on.</p>
+</blockquote>
+<p>Rasmus, I want every gun made from now on changed… <em>to <a href="https://en.wikipedia.org/wiki/Magic_quotes">fire backwards</a>.</em></p>
+<hr />
+<p>You aim the gun at your foot, and pull the trigger. Your head explodes.</p>
+<h2 id="coq">Coq</h2>
+<p>What’s a foot?</p>]]></summary>
+</entry>
+<entry>
+    <title>First post</title>
+    <link href="https://lambda.xyz/blog/first-post/" />
+    <id>https://lambda.xyz/blog/first-post/</id>
+    <published>2013-06-12T00:00:00Z</published>
+    <updated>2013-06-12T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>This is the first post! On this blog! It’s so exciting! Lots of exclamation points! Yay!</p>
+<p>Now for a few intelligent sounding quotes to hide the lack of real content in this blog:</p>
+<blockquote>
+<p>He had moved from thoughts to words, and now from words to actions.</p>
+<p>– George Orwell, <em>Nineteen-Eighty Four</em></p>
+</blockquote>
+<blockquote>
+<p>‘Begin at the beginning,’ the King said gravely, ‘and go on till you come to the end: then stop.’</p>
+<p>– Lewis Carroll, <em>Alice’s Adventures in Wonderland</em></p>
+</blockquote>]]></summary>
+</entry>
+
+</feed>
